@@ -1,7 +1,7 @@
 node_modules
 out
 dist
-dist-electron
+src-tauri/target
 *.log
 .env
 .env.local
@@ -9,3 +9,5 @@ dist-electron
 .vscode
 .idea
 npm-debug.log*
+CLAUDE.md
+docs/superpowers/

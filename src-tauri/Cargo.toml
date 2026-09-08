@@ -1,0 +1,41 @@
+[package]
+name = "sparksdb"
+version = "0.1.0"
+description = "Cliente Postgres desktop basico - conectar, navegar schemas e rodar SQL"
+authors = ["Jeferson da Cruz"]
+license = "MIT"
+repository = "https://github.com/JefersondaCruz/sparksDB"
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.3", features = [] }
+tauri-plugin-log = "2"
+uuid = { version = "1.20.0", features = ["v4"] }
+deadpool-postgres = "0.14.1"
+tokio-postgres = "0.7.13"
+tokio = { version = "1.53.1", features = ["full"] }
+
+# keyring nao habilita nenhum backend por padrao; escolhemos o
+# apropriado por plataforma para que ele realmente delegue ao
+# keychain do SO (e nao apenas falhe sempre, forcando o fallback).
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6.3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3.6.3", features = ["windows-native"] }
