@@ -1,5 +1,8 @@
 # sparksDB
 
+[![CI](https://github.com/JefersondaCruz/sparksDB/actions/workflows/ci.yml/badge.svg)](https://github.com/JefersondaCruz/sparksDB/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Cliente Postgres desktop básico, no estilo DBeaver: conectar num banco, navegar schemas/tabelas e rodar SQL com resultado em grid. Feito pra uso pessoal e local — sem login, sem múltiplos usuários.
 
 ## Stack
@@ -68,3 +71,12 @@ src/
 ## Escopo (o que não tem, de propósito)
 
 Só Postgres, uso local single-user. Não tem: diagrama ER, export/import CSV, histórico de queries, autocomplete avançado de SQL, controle explícito de transação entre execuções de "Run", múltiplos usuários/autenticação. Se algum desses fizer falta, dá pra adicionar depois.
+
+## Contribuindo
+
+Contribuições são bem-vindas! Veja o [guia de contribuição](CONTRIBUTING.md)
+para o fluxo de PR e como o projeto é mantido.
+
+## Licença
+
+[MIT](LICENSE)
