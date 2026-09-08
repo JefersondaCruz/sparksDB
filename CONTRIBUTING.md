@@ -14,7 +14,7 @@ fazer, pra alinhar antes de codar.
 ## Fluxo de contribuição
 
 1. Faça um fork do repositório.
-2. Crie uma branch a partir da `main`: `git checkout -b minha-mudanca`.
+2. Crie uma branch a partir da `main`, com nome em inglês: `git checkout -b fix-connection-timeout` (ou `feat-...`, `docs-...`).
 3. Rode o projeto localmente (veja o [README](README.md#rodando-em-desenvolvimento)):
    ```bash
    npm install
@@ -41,6 +41,11 @@ Não tem linter configurado ainda, mas siga o padrão que já existe no
 arquivo que você está mexendo (nomes em português no domínio da UI, código em
 inglês/português misto como já está no projeto, componentes Vue com
 `<script setup>`).
+
+## Commits
+
+O título (primeira linha) do commit deve ser em **inglês** (ex.: `fix: handle
+connection timeout`). O corpo, explicando o porquê, pode ser em português.
 
 ## Reportando bugs
 
