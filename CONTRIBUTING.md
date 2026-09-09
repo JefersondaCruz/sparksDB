@@ -20,8 +20,14 @@ fazer, pra alinhar antes de codar.
    npm install
    npm run dev
    ```
+   Precisa de um Postgres local pra testar de verdade. Se não tiver um à
+   mão, o jeito mais rápido é subir um descartável via Docker:
+   ```bash
+   docker run -d --rm --name sparksdb-dev-pg -p 5432:5432 \
+     -e POSTGRES_PASSWORD=postgres postgres:16
+   ```
 4. Faça suas mudanças. Mantenha o escopo da PR pequeno e focado em uma coisa só.
-5. Confirme que o build passa: `npm run build`.
+5. Confirme que o build passa: `npm run build:vite` (frontend) e `cd src-tauri && cargo build` (backend).
 6. Abra um Pull Request contra a `main` descrevendo o que mudou e por quê.
 
 ## Como as PRs são revisadas e mergeadas

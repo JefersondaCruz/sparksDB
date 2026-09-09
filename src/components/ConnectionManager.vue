@@ -45,6 +45,11 @@
       </li>
     </ul>
 
+    <p v-if="connections.connectError" class="mb-2 flex items-start gap-1 px-1.5 text-xs text-red-400">
+      <AlertCircle :size="13" class="mt-0.5 shrink-0" />
+      <span>{{ connections.connectError }}</span>
+    </p>
+
     <form v-if="showForm" class="space-y-1.5 rounded border border-neutral-800 bg-neutral-900 p-2" @submit.prevent="save">
       <input v-model="form.name" placeholder="Nome" class="input" required />
       <div class="flex gap-1.5">
@@ -75,7 +80,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { AlertCircle, CheckCircle2, Loader2, Plus, Trash2, X } from '@lucide/vue'
-import { useConnectionsStore } from '../stores/connections'
+import { errorText, useConnectionsStore } from '../stores/connections'
 
 const connections = useConnectionsStore()
 const showForm = ref(false)
@@ -94,9 +99,14 @@ const form = reactive({
 
 async function test() {
   testMessage.value = 'Testando...'
-  const result = await connections.test({ ...form })
-  testOk.value = result.ok
-  testMessage.value = result.ok ? 'Conexão OK' : `Falhou: ${result.error}`
+  try {
+    await connections.test({ ...form })
+    testOk.value = true
+    testMessage.value = 'Conexão OK'
+  } catch (error) {
+    testOk.value = false
+    testMessage.value = `Falhou: ${errorText(error)}`
+  }
 }
 
 async function save() {

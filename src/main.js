@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import * as monaco from 'monaco-editor'
 import { loader } from '@guolao/vue-monaco-editor'
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
+import './api/sparksdb'
 import './assets/main.css'
 import App from './App.vue'
 
