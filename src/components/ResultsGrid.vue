@@ -8,7 +8,10 @@
       {{ result.error }}
     </div>
     <div class="min-h-0 flex-1 overflow-auto">
-      <table v-if="result && result.rows.length" class="w-full border-collapse text-xs">
+      <div v-if="loading && !result" class="flex h-full items-center justify-center text-neutral-500">
+        <Loader2 :size="18" class="animate-spin" />
+      </div>
+      <table v-else-if="result && result.rows.length" class="w-full border-collapse text-xs">
         <thead class="sticky top-0 bg-neutral-800">
           <tr>
             <th
@@ -50,9 +53,12 @@
 </template>
 
 <script setup>
-import { AlertCircle } from '@lucide/vue'
+import { AlertCircle, Loader2 } from '@lucide/vue'
 
-defineProps({ result: { type: Object, default: null } })
+defineProps({
+  result: { type: Object, default: null },
+  loading: { type: Boolean, default: false }
+})
 
 function formatValue(value) {
   if (value === null || value === undefined) return 'NULL'
