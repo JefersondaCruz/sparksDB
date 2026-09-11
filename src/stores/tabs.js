@@ -63,12 +63,12 @@ export const useTabsStore = defineStore('tabs', {
       const tab = this.tabs.find((t) => t.id === id)
       if (tab) tab.sql = sql
     },
-    async runQuery(id) {
+    async runQuery(id, sql) {
       const tab = this.tabs.find((t) => t.id === id)
       if (!tab || tab.type !== 'query') return
       tab.loading = true
       try {
-        tab.result = await window.sparksdb.db.query(tab.connId, tab.sql)
+        tab.result = await window.sparksdb.db.query(tab.connId, sql ?? tab.sql)
       } finally {
         tab.loading = false
       }

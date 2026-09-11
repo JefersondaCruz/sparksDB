@@ -32,6 +32,7 @@
 </template>
 
 <script setup>
+import { shallowRef } from 'vue'
 import * as monaco from 'monaco-editor'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { Loader2, Play } from '@lucide/vue'
@@ -40,12 +41,19 @@ import ResultsGrid from './ResultsGrid.vue'
 
 const props = defineProps({ tab: { type: Object, required: true } })
 const tabs = useTabsStore()
+const editorRef = shallowRef(null)
 
 function run() {
-  tabs.runQuery(props.tab.id)
+  const editor = editorRef.value
+  const selection = editor?.getSelection()
+  const selectedSql = selection && !selection.isEmpty()
+    ? editor.getModel().getValueInRange(selection)
+    : null
+  tabs.runQuery(props.tab.id, selectedSql?.trim() || undefined)
 }
 
 function onMount(editor) {
+  editorRef.value = editor
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run)
 }
 </script>
