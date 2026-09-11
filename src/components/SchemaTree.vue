@@ -1,6 +1,16 @@
 <template>
   <div class="min-h-0 flex-1 overflow-y-auto p-2">
-    <div class="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Schemas</div>
+    <div class="mb-1 flex items-center justify-between px-1">
+      <span class="text-xs font-semibold uppercase tracking-wide text-neutral-500">Schemas</span>
+      <button
+        class="rounded p-0.5 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300 disabled:opacity-40"
+        title="Atualizar schemas"
+        :disabled="refreshing"
+        @click="refresh"
+      >
+        <RefreshCw :size="13" :class="{ 'animate-spin': refreshing }" />
+      </button>
+    </div>
     <ul>
       <li v-for="schema in schemas" :key="schema">
         <button
@@ -34,7 +44,7 @@
 
 <script setup>
 import { reactive, ref, watch } from 'vue'
-import { ChevronDown, ChevronRight, Eye, FolderTree, Table2 } from '@lucide/vue'
+import { ChevronDown, ChevronRight, Eye, FolderTree, RefreshCw, Table2 } from '@lucide/vue'
 import { useTabsStore } from '../stores/tabs'
 
 const props = defineProps({ connId: { type: String, required: true } })
@@ -43,6 +53,7 @@ const tabs = useTabsStore()
 const schemas = ref([])
 const expanded = reactive({})
 const tables = reactive({})
+const refreshing = ref(false)
 
 async function load() {
   schemas.value = await window.sparksdb.db.schemas(props.connId)
@@ -52,6 +63,21 @@ async function toggleSchema(schema) {
   expanded[schema] = !expanded[schema]
   if (expanded[schema] && !tables[schema]) {
     tables[schema] = await window.sparksdb.db.tables(props.connId, schema)
+  }
+}
+
+async function refresh() {
+  refreshing.value = true
+  try {
+    await load()
+    const expandedSchemas = Object.keys(expanded).filter((schema) => expanded[schema])
+    await Promise.all(
+      expandedSchemas.map(async (schema) => {
+        tables[schema] = await window.sparksdb.db.tables(props.connId, schema)
+      })
+    )
+  } finally {
+    refreshing.value = false
   }
 }
 

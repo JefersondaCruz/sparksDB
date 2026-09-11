@@ -19,6 +19,14 @@
       <div v-if="subTab === 'data'" class="ml-auto flex items-center gap-2 text-xs text-neutral-500">
         <button
           class="rounded border border-neutral-700 p-0.5 disabled:opacity-30"
+          title="Atualizar dados"
+          :disabled="tab.loading"
+          @click="tabs.loadTableData(tab.id, tab.page)"
+        >
+          <RefreshCw :size="13" :class="{ 'animate-spin': tab.loading }" />
+        </button>
+        <button
+          class="rounded border border-neutral-700 p-0.5 disabled:opacity-30"
           :disabled="tab.page === 0"
           @click="tabs.loadTableData(tab.id, tab.page - 1)"
         >
@@ -63,7 +71,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, RefreshCw } from '@lucide/vue'
 import { useTabsStore } from '../stores/tabs'
 import ResultsGrid from './ResultsGrid.vue'
 
