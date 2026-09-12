@@ -44,7 +44,13 @@
     </div>
 
     <div class="min-h-0 flex-1">
-      <ResultsGrid v-if="subTab === 'data'" :result="dataResult" />
+      <ResultsGrid v-if="subTab === 'data'" :result="dataResult" :loading="tab.loading" />
+      <div
+        v-else-if="loadingColumns"
+        class="flex h-full items-center justify-center bg-neutral-900 text-neutral-500"
+      >
+        <Loader2 :size="18" class="animate-spin" />
+      </div>
       <div v-else class="h-full overflow-auto bg-neutral-900">
         <table class="w-full border-collapse text-xs">
           <thead class="sticky top-0 bg-neutral-800">
@@ -71,7 +77,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { ChevronLeft, ChevronRight, RefreshCw } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from '@lucide/vue'
 import { useTabsStore } from '../stores/tabs'
 import ResultsGrid from './ResultsGrid.vue'
 
@@ -80,6 +86,7 @@ const tabs = useTabsStore()
 
 const subTab = ref('data')
 const columns = ref([])
+const loadingColumns = ref(false)
 
 const dataResult = computed(() => {
   const r = props.tab.result
@@ -95,6 +102,11 @@ const hasNextPage = computed(() => {
 
 async function loadColumns() {
   subTab.value = 'structure'
-  columns.value = await window.sparksdb.db.columns(props.tab.connId, props.tab.schema, props.tab.table)
+  loadingColumns.value = true
+  try {
+    columns.value = await window.sparksdb.db.columns(props.tab.connId, props.tab.schema, props.tab.table)
+  } finally {
+    loadingColumns.value = false
+  }
 }
 </script>

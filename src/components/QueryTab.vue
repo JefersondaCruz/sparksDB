@@ -26,7 +26,7 @@
     </div>
 
     <div class="min-h-0 flex-[1]">
-      <ResultsGrid :result="tab.result" />
+      <ResultsGrid :result="tab.result" :loading="tab.loading" />
     </div>
   </div>
 </template>
