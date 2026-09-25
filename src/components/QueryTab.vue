@@ -11,7 +11,60 @@
         {{ tab.loading ? 'Executando...' : 'Run' }}
       </button>
       <span class="text-xs text-neutral-600">Ctrl+Enter</span>
+      <button
+        class="ml-auto flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs disabled:opacity-40"
+        :class="
+          isDirty
+            ? 'border-amber-600/60 text-amber-400 hover:bg-amber-500/10'
+            : 'border-neutral-700 text-neutral-200 hover:bg-neutral-800'
+        "
+        :disabled="!tab.sql.trim()"
+        @click="openSaveForm"
+      >
+        <Save :size="13" />
+        {{ tab.savedQueryId ? (isDirty ? 'Atualizar query' : 'Query salva') : 'Salvar query' }}
+      </button>
+      <span v-if="tab.savedQueryId" class="text-xs text-neutral-600">Ctrl+S</span>
     </div>
+
+    <form
+      v-if="showSaveForm"
+      class="flex items-center gap-1.5 border-b border-neutral-800 bg-neutral-900 px-2 py-1.5"
+      @submit.prevent="submitSave"
+    >
+      <input
+        v-model="saveName"
+        placeholder="Nome da query"
+        class="flex-1 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+        required
+      />
+      <button
+        type="submit"
+        class="rounded bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-40"
+        :disabled="saving"
+      >
+        {{ saving ? 'Salvando...' : tab.savedQueryId ? 'Atualizar' : 'Salvar' }}
+      </button>
+      <button
+        v-if="tab.savedQueryId"
+        type="button"
+        class="rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+        :disabled="saving"
+        @click="saveAsNew"
+      >
+        Salvar como nova
+      </button>
+      <button
+        type="button"
+        class="rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+        @click="closeSaveForm"
+      >
+        Cancelar
+      </button>
+    </form>
+    <p v-if="saveError" class="border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-xs text-red-400">
+      {{ saveError }}
+    </p>
 
     <div class="min-h-0 flex-[2] border-b border-neutral-800">
       <VueMonacoEditor
@@ -238,16 +291,88 @@ function ensureCompletionProvider() {
 
 <script setup>
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
-import { Loader2, Play } from '@lucide/vue'
-import { shallowRef, watch } from 'vue'
+import { Loader2, Play, Save } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { errorText, useConnectionsStore } from '../stores/connections'
 import { useTabsStore } from '../stores/tabs'
-import { useConnectionsStore } from '../stores/connections'
+import { useSavedQueriesStore } from '../stores/savedQueries'
 import ResultsGrid from './ResultsGrid.vue'
 
 const props = defineProps({ tab: { type: Object, required: true } })
 const tabs = useTabsStore()
 const editorRef = shallowRef(null)
 const connections = useConnectionsStore()
+const savedQueries = useSavedQueriesStore()
+const showSaveForm = ref(false)
+const saveName = ref('')
+const saveError = ref('')
+const saving = ref(false)
+const isDirty = computed(() => Boolean(props.tab.savedQueryId) && props.tab.sql !== props.tab.savedQuerySql)
+
+function openSaveForm() {
+  if (showSaveForm.value) return
+  const existing = props.tab.savedQueryId
+    ? savedQueries.list.find((q) => q.id === props.tab.savedQueryId)
+    : null
+  saveName.value = existing?.name || ''
+  showSaveForm.value = true
+}
+
+function closeSaveForm() {
+  saveName.value = ''
+  saveError.value = ''
+  showSaveForm.value = false
+}
+
+async function persist(id) {
+  if (saving.value) return
+  if (!saveName.value.trim()) {
+    saveError.value = 'Informe um nome para a query'
+    return
+  }
+  saving.value = true
+  saveError.value = ''
+  try {
+    const saved = await savedQueries.save({ id, connId: props.tab.connId, name: saveName.value, sql: props.tab.sql })
+    tabs.markSaved(props.tab.id, saved.id, saved.sql, saved.name)
+    closeSaveForm()
+  } catch (error) {
+    saveError.value = errorText(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+function saveAsNew() {
+  persist(undefined)
+}
+
+function updateExisting() {
+  persist(props.tab.savedQueryId)
+}
+
+function submitSave() {
+  if (props.tab.savedQueryId) {
+    updateExisting()
+  } else {
+    saveAsNew()
+  }
+}
+
+function quickSave() {
+  if (showSaveForm.value) {
+    submitSave()
+    return
+  }
+  if (!props.tab.sql.trim()) return
+  if (!props.tab.savedQueryId) {
+    openSaveForm()
+    return
+  }
+  const existing = savedQueries.list.find((q) => q.id === props.tab.savedQueryId)
+  saveName.value = existing?.name || props.tab.title
+  updateExisting()
+}
 
 function run() {
   const editor = editorRef.value
@@ -265,6 +390,15 @@ function onMount(editor) {
   loadSchemaCache(props.tab.connId)
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run)
 }
+
+function handleKeydown(event) {
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return
+  event.preventDefault()
+  quickSave()
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown, { capture: true }))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown, { capture: true }))
 
 watch(
   () => connections.status[props.tab.connId],

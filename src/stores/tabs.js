@@ -11,13 +11,22 @@ export const useTabsStore = defineStore('tabs', {
     activeTab: (state) => state.tabs.find((t) => t.id === state.activeTabId) || null
   },
   actions: {
-    openQueryTab(connId) {
+    openQueryTab(connId, sql = '', savedQueryId = null, title = null) {
+      if (savedQueryId) {
+        const existing = this.tabs.find((t) => t.type === 'query' && t.savedQueryId === savedQueryId)
+        if (existing) {
+          this.activeTabId = existing.id
+          return existing.id
+        }
+      }
       const tab = {
         id: nextId++,
         type: 'query',
         connId,
-        title: `Query ${nextId - 1}`,
-        sql: '',
+        title: title || `Query ${nextId - 1}`,
+        sql,
+        savedQueryId,
+        savedQuerySql: savedQueryId ? sql : null,
         result: null,
         loading: false
       }
@@ -66,6 +75,22 @@ export const useTabsStore = defineStore('tabs', {
     setSql(id, sql) {
       const tab = this.tabs.find((t) => t.id === id)
       if (tab) tab.sql = sql
+    },
+    markSaved(id, savedQueryId, sql, title) {
+      const tab = this.tabs.find((t) => t.id === id)
+      if (!tab) return
+      tab.savedQueryId = savedQueryId
+      tab.savedQuerySql = sql
+      if (title) tab.title = title
+    },
+    unlinkSavedQuery(savedQueryId) {
+      for (const tab of this.tabs) {
+        if (tab.type === 'query' && tab.savedQueryId === savedQueryId) {
+          tab.savedQueryId = null
+          tab.savedQuerySql = null
+          tab.title = `Query ${tab.id}`
+        }
+      }
     },
     async runQuery(id, sql) {
       const tab = this.tabs.find((t) => t.id === id)

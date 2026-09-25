@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod pool_manager;
 pub mod queries;
+pub mod saved_queries;
 pub mod state;
 pub mod store;
 
@@ -22,6 +23,9 @@ pub fn run() {
       commands::db::db_tables,
       commands::db::db_columns,
       commands::db::db_table_data,
+      commands::saved_queries::queries_list,
+      commands::saved_queries::queries_save,
+      commands::saved_queries::queries_delete,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

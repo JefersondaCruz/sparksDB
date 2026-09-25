@@ -10,6 +10,10 @@
         v-if="connections.activeConnectionId"
         :conn-id="connections.activeConnectionId"
       />
+      <SavedQueries
+        v-if="connections.activeConnectionId"
+        :conn-id="connections.activeConnectionId"
+      />
     </aside>
 
     <main class="flex min-w-0 flex-1 flex-col">
@@ -30,6 +34,11 @@
           <TerminalSquare v-if="tab.type === 'query'" :size="13" />
           <Table2 v-else :size="13" />
           {{ tab.title }}
+          <span
+            v-if="tab.type === 'query' && tab.savedQueryId && tab.sql !== tab.savedQuerySql"
+            class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
+            title="Alterações não salvas"
+          ></span>
           <X :size="13" class="text-neutral-500 hover:text-neutral-200" @click.stop="tabs.closeTab(tab.id)" />
         </button>
         <button
@@ -68,7 +77,7 @@
 
       <div class="min-h-0 flex-1 bg-neutral-900">
         <template v-if="tabs.activeTab">
-          <QueryTab v-if="tabs.activeTab.type === 'query'" :tab="tabs.activeTab" />
+          <QueryTab v-if="tabs.activeTab.type === 'query'" :key="tabs.activeTab.id" :tab="tabs.activeTab" />
           <TableDataView v-else :tab="tabs.activeTab" />
         </template>
         <div v-else class="flex h-full items-center justify-center text-neutral-600">
@@ -84,6 +93,7 @@ import { onMounted, reactive } from 'vue'
 import { DatabaseZap, Plus, Table2, TerminalSquare, X } from '@lucide/vue'
 import ConnectionManager from './components/ConnectionManager.vue'
 import SchemaTree from './components/SchemaTree.vue'
+import SavedQueries from './components/SavedQueries.vue'
 import QueryTab from './components/QueryTab.vue'
 import TableDataView from './components/TableDataView.vue'
 import { useConnectionsStore } from './stores/connections'

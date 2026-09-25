@@ -16,5 +16,10 @@ window.sparksdb = {
     columns: (id, schema, table) => invoke('db_columns', { id, schema, table }),
     tableData: (id, schema, table, limit, offset) =>
       invoke('db_table_data', { id, schema, table, limit, offset })
+  },
+  queries: {
+    list: () => invoke('queries_list'),
+    save: (input) => invoke('queries_save', { input }),
+    delete: (id) => invoke('queries_delete', { id })
   }
 }
