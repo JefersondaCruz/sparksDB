@@ -9,6 +9,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SPARKSDB_TEST_DSN: host=localhost port=5432 dbname=postgres user=postgres password=postgres
     steps:
       - uses: actions/checkout@v4
 
@@ -17,17 +31,18 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev librsvg2-dev patchelf libdbus-1-dev
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
         with:
-          workspaces: src-tauri
+          python-version: "3.12"
 
       - run: npm ci
       - run: npm run build:vite
-      - run: cd src-tauri && cargo build
+
+      - run: pip install -e "backend[dev]"
+      - run: python -m pytest backend -v
+
+      - run: PYTHON=python scripts/build-appimage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sparksdb-appimage
+          path: build/*.AppImage

@@ -8,21 +8,21 @@
   "scripts": {
     "dev:vite": "vite dev",
     "build:vite": "vite build",
-    "dev": "tauri dev",
-    "build:linux": "tauri build",
-    "tauri": "tauri"
+    "setup": "scripts/setup-dev.sh",
+    "dev": "concurrently -k -n vite,app \"vite dev\" \"PYTHONPATH=backend .venv/bin/python -m sparksdb --dev\"",
+    "build:appimage": "npm run build:vite && scripts/build-appimage.sh",
+    "test:backend": ".venv/bin/python -m pytest backend"
   },
   "dependencies": {
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@lucide/vue": "^1.41.0",
-    "@tauri-apps/api": "^2.11.1",
     "pinia": "^2.3.1",
     "vue": "^3.5.42"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4",
     "@vitejs/plugin-vue": "^5.2.1",
     "autoprefixer": "^10.5.5",
+    "concurrently": "^10.0.5",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.17",
     "vite": "^5.4.11"
