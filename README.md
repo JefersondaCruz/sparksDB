@@ -7,37 +7,64 @@ Cliente Postgres desktop básico, no estilo DBeaver: conectar num banco, navegar
 
 ## Stack
 
-- [Tauri 2](https://tauri.app/) (shell nativo em Rust + webview do sistema, sem Node/Chromium empacotado)
+- [pywebview](https://pywebview.flowrl.com/) (janela nativa com o webview do sistema — WebKitGTK no Linux — e ponte JS ↔ Python)
 - [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) + [Tailwind CSS](https://tailwindcss.com/)
-- [tokio-postgres](https://github.com/sfackler/rust-postgres) + [deadpool-postgres](https://github.com/bikeshedder/deadpool) (driver e pool Postgres, rodam só no backend Rust)
+- [psycopg 3](https://www.psycopg.org/psycopg3/) + [psycopg_pool](https://www.psycopg.org/psycopg3/docs/advanced/pool.html) (driver e pool Postgres, rodam só no backend Python)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) para o editor SQL
-- [keyring](https://github.com/hwchen/keyring-rs) para salvar conexões (a senha é criptografada usando o keychain do SO)
+- [keyring](https://github.com/jaraco/keyring) para salvar conexões (a senha fica no keychain do SO)
 
-## Pré-requisitos
+## Instalando (só pra usar)
 
+Baixe o `sparksDB-<versão>-x86_64.AppImage` (artefato `sparksdb-appimage` do último build na aba Actions) e:
+
+```bash
+chmod +x sparksDB-*-x86_64.AppImage
+./sparksDB-*-x86_64.AppImage
+```
+
+Não precisa de sudo nem de instalar nada: roda no Ubuntu Desktop 24.04 ou mais novo, usando o Python e o WebKit que já vêm no sistema.
+
+## Pré-requisitos (pra desenvolver)
+
+- Ubuntu Desktop 24.04+ (o Python 3 e o WebKitGTK já vêm instalados)
 - Node.js 22 (o projeto foi criado e testado com essa versão via [nvm](https://github.com/nvm-sh/nvm))
-- Rust estável (via [rustup](https://rustup.rs/)) e, no Linux, os pacotes de sistema: `libwebkit2gtk-4.1-dev`, `libssl-dev`, `libgtk-3-dev`, `librsvg2-dev`, `patchelf`, `libdbus-1-dev` (este último exigido pela feature `sync-secret-service` do `keyring`, que linka contra libdbus em tempo de build). Veja também o [guia de pré-requisitos do Tauri](https://tauri.app/start/prerequisites/) para outras plataformas.
 
 ```bash
 nvm install 22
 nvm use 22
 ```
 
+Não precisa de sudo: o `npm run setup` cria um ambiente Python isolado em `.venv/`, dentro do projeto.
+
 ## Rodando em desenvolvimento
 
 ```bash
 npm install
+npm run setup   # uma vez: cria .venv/ com as dependências Python
 npm run dev
 ```
 
-Isso sobe o Vite em modo dev e abre a janela do Tauri (webview do sistema) com hot-reload do frontend.
+O `npm run dev` sobe o Vite em modo dev e abre a janela do pywebview apontando pra ele, com hot-reload do frontend. Mudanças no backend Python pedem reiniciar o `npm run dev`.
+
+### Testes do backend
+
+Os testes que falam com Postgres precisam de um banco descartável:
+
+```bash
+docker run -d --rm --name sparksdb-test-pg -p 55432:5432 -e POSTGRES_PASSWORD=postgres postgres:16
+export SPARKSDB_TEST_DSN="host=127.0.0.1 port=55432 dbname=postgres user=postgres password=postgres"
+npm run test:backend
+```
+
+Sem `SPARKSDB_TEST_DSN`, esses testes são pulados.
 
 ## Build / empacotamento
 
 ```bash
-npm run build:vite   # build de produção do frontend Vue em dist/
-npm run build:linux  # tauri build: compila o backend Rust em release e gera AppImage + .deb em src-tauri/target/release/bundle/
+npm run build:appimage   # build do frontend + gera build/sparksDB-<versão>-x86_64.AppImage
 ```
+
+O AppImage leva dentro o app e as dependências Python (psycopg com a própria libpq, pywebview, keyring), com as partes compiladas para Python 3.12, 3.13 e 3.14. Ele usa o `python3`, o GTK e o WebKitGTK do sistema. Pra suportar um Python mais novo, adicione a versão em `PYTHON_VERSIONS` no `scripts/build-appimage.sh`.
 
 ## Como usar
 
@@ -49,27 +76,32 @@ npm run build:linux  # tauri build: compila o backend Rust em release e gera App
 
 ## Nota para quem já usava a versão Electron
 
-Esta versão (Tauri/Rust) usa um diretório de configuração diferente da versão antiga (Electron), e o arquivo de conexões tem outro formato. Ou seja: as conexões salvas na versão anterior **não aparecem automaticamente** aqui — é preciso recriá-las na barra lateral. As senhas antigas também não dão pra migrar: ficavam criptografadas pelo `safeStorage` do Electron, que só o próprio Electron consegue ler. Nada foi apagado, o arquivo antigo continua onde estava (`~/.config/sparksDB/`), só não é mais lido.
+Desde a versão Tauri, o sparksDB usa um diretório de configuração diferente da versão antiga (Electron), e o arquivo de conexões tem outro formato. Ou seja: as conexões salvas na versão anterior **não aparecem automaticamente** aqui — é preciso recriá-las na barra lateral. As senhas antigas também não dão pra migrar: ficavam criptografadas pelo `safeStorage` do Electron, que só o próprio Electron consegue ler. Nada foi apagado, o arquivo antigo continua onde estava (`~/.config/sparksDB/`), só não é mais lido.
+
+Já quem vem da versão Tauri não perde nada: o backend Python lê o mesmo diretório de configuração e o mesmo keyring, então as conexões e queries salvas continuam aparecendo.
 
 ## Estrutura do projeto
 
 ```
-src-tauri/
-  src/
-    main.rs            # entrypoint do binário Tauri
-    lib.rs             # registra os commands e o estado gerenciado
-    state.rs           # estado compartilhado da aplicação
-    store.rs           # persistência das conexões salvas (keyring para a senha)
-    pool_manager.rs     # gerencia um deadpool-postgres::Pool por conexão ativa
-    queries.rs          # helpers de introspecção (schemas/tabelas/colunas) e leitura de dados
-    commands/
-      connections.rs     # commands Tauri de CRUD/teste de conexões
-      db.rs               # commands Tauri de conectar/desconectar/rodar query
+backend/
+  pyproject.toml       # dependências e config do pytest
+  sparksdb/
+    __main__.py        # entrypoint: cria a janela do pywebview (dev ou dist/)
+    api.py             # métodos expostos ao frontend via window.pywebview.api
+    paths.py           # diretório de config e leitura/escrita de JSON
+    store.py           # conexões salvas (senha no keyring, fallback em arquivo)
+    saved_queries.py   # queries salvas por conexão
+    pool_manager.py    # um psycopg_pool por conexão ativa + execução de SQL
+    queries.py         # introspecção (schemas/tabelas/colunas) e leitura de dados
+  tests/               # pytest
+scripts/
+  setup-dev.sh         # cria .venv/ sem sudo
+  build-appimage.sh    # gera o AppImage
 src/
   api/
-    sparksdb.js        # wrapper que chama os commands Tauri via invoke()
-  components/          # ConnectionManager, SchemaTree, QueryTab, ResultsGrid, TableDataView
-  stores/              # Pinia: connections.js, tabs.js
+    sparksdb.js        # wrapper que chama o backend via window.pywebview.api
+  components/          # ConnectionManager, SchemaTree, QueryTab, ResultsGrid, TableDataView, SavedQueries
+  stores/              # Pinia: connections.js, tabs.js, savedQueries.js
   App.vue
   main.js
 ```

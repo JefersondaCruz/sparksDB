@@ -18,6 +18,7 @@ fazer, pra alinhar antes de codar.
 3. Rode o projeto localmente (veja o [README](README.md#rodando-em-desenvolvimento)):
    ```bash
    npm install
+   npm run setup
    npm run dev
    ```
    Precisa de um Postgres local pra testar de verdade. Se não tiver um à
@@ -27,7 +28,7 @@ fazer, pra alinhar antes de codar.
      -e POSTGRES_PASSWORD=postgres postgres:16
    ```
 4. Faça suas mudanças. Mantenha o escopo da PR pequeno e focado em uma coisa só.
-5. Confirme que o build passa: `npm run build:vite` (frontend) e `cd src-tauri && cargo build` (backend).
+5. Confirme que o build passa e os testes do backend rodam: `npm run build:vite` e `npm run test:backend` (veja no [README](README.md#testes-do-backend) como subir o Postgres de teste).
 6. Abra um Pull Request contra a `main` descrevendo o que mudou e por quê.
 
 ## Como as PRs são revisadas e mergeadas
